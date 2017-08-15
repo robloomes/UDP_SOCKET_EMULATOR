@@ -1,0 +1,21 @@
+"""
+   COSC 264 Sockets assignment (2017)
+   Student Name: Robert Loomes
+   Usercode: rwl29
+"""
+
+class Packet:
+    """Creates the packet to be sent via the 
+    Sender/Channel/Reciever connections"""
+    
+    def __init__(self, packetType, seqno, dataLen, data):
+        
+        self.magicNo = 0x497E
+        self.packetType = packet_type #two available types dataPacket OR acknowledgementPacket
+        self.seqno = seqno #need to restrict this value to 0 or 1
+        self.dataLen =  dataLen
+        self.data =  data
+        
+        
+        
+        
