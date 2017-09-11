@@ -57,7 +57,7 @@ def sender_function(file_in, sock_in, sock_out):
             rcvd = sock_in.recv(2**16) #may change due to different number needed
             
             try:
-                trial = Packet(rcvd)
+                trial = create_packet(rcvd)
 
             except ValueError:
                 continue
