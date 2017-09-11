@@ -1,55 +1,99 @@
 """
    COSC 264 Sockets assignment (2017)
-   Packet
-   Student Name: Robert Loomes, Jake Simpson
-   Usercode: rwl29, jsi76
+   Student Name: Robert Loomes
+   Usercode: rwl29
 """
-#TODO data variable###########################
-class Packet:
-    """Creates the packet to be sent via the 
-    Sender/Channel/Reciever connections"""
-    
-    def __init__(self, packet_type, seqno, data_len, data):
-        
-        self.magic_no = 0x497E
-        self.packet_type = packet_type 
-        self.seqno = seqno 
-        self.data_len = data_len
-        self.data =  data
-        
-        #def packet_type_check(self):
-            #if packet_type !=  dataPacket or packet_type != acknowledgementPacket:
-                #raise TypeError('Packet type not compatiable')
-            
-    def seqno_check(self):
-        if (self.seqno !=  0) and (self.seqno != 1):
-            raise ValueError('Seqence number must be restricted to values 0 or 1')
-            
-    def data_len_check(self):
-        if self.data_len < 0 or self.data_len > 512:
-            raise ValueError('Data length exeeds 512 bytes (maximum data value)')
-            
-    def print_packet(self):
-        print('Packet seqno: {}'.format(self.seqno))
-            
-def create_packet(packet_type, seqno, data_len, data):
-    """Creates Packet class and calls it's helper functions
-    to creck parameter validity"""
-    
-    packet = Packet(packet_type, seqno, data_len, data)
-    packet.seqno_check()
-    packet.data_len_check()
-    packet.print_packet()
-    
-    print(packet)
-    
-create_packet('dataPacket', 0, 109, 0) 
-                 
-                
-        
+import os
+import select
+import socket
+import sys
+from contextlib import closing
 
+from Packet import create_packet
+
+
+"""
+2 port numbers for Sin and Sout
+1 port number Cs,in
+file name
+"""
+
+BLOCK_SIZE = int(os.environ.get('SENDER_BLOCK_SIZE', '512'))
+TIMEOUT = float(os.environ.get('SENDER_TIMEOUT', '1'))
+
+def sender_function(file_in, sock_in, sock_out):
+    """function that has an outer and inner loop. Outer loop prepares a packet
+    for packetBuffer. Inner loop sends out the packet buffer then waits and 
+    checks the response packet"""
+    v_next = 0 
+    exit_flag = False
+    packet_count = 0
     
+    while not exit_flag:
+        data = file_in.read(BLOCK_SIZE)
+        dataLen = len(data)
         
+        if dataLen > 0:
+            packetBuffer = create_packet(dataPacket, v_next, data_len, data)
+        else:
+            if dataLen == 0:
+                packetBuffer = create_packet(dataPacket, v_next, dataLen)
+                exitFlag = True
         
-        
-        
+        processing = True
+        while processing:
+            try:
+                sock_out.send(packetBuffer)
+                packet_count += 1
+            except ConnectionRefusedError:
+                print('Connection lost with sender')
+                return
+            
+            ready, _, _ = select.select([sock_in], [], [], TIMEOUT)
+            
+            if not ready:
+                continue
+            
+            rcvd = sock_in.recv(2**16) #may change due to different number needed
+            
+            try:
+                trial = Packet(rcvd)
+
+            except ValueError:
+                continue
+            if trial.magic_no != 0x497E:
+                continue
+            if trial.packet_type != acknowledgementPacket:
+                continue
+            if trial.dataLen != 0:
+                continue
+            if trial.seqno != v_next:
+                continue
+                
+            v_next = 1 - v_next
+            processing = False
+    
+        if exit_flag != True:
+            continue
+        else:
+            print("Number of packets sent in total {}".format(packet_count))
+            exit(0)
+                                        
+                        
+                        
+def main(argv):
+    """main function for sender program that opens ports for sending"""
+    try:
+        s_in = parse_port(argv[1])
+        s_out = parse_port(argv[2])
+        c_s_in = parse_port(argv[3])
+        file_name = argv[4]
+    except (IndexError, ValueError):
+        return 'Usage: {} S_IN S_OUT C_S_IN FILE_NAME'.format(sys.argv[0])
+    with open(file_name, 'rb') as file_in, \
+            closing(socket.socket(type=socket.SOCK_DGRAM)) as sock_in, \
+            closing(socket.socket(type=socket.SOCK_DGRAM)) as sock_out:
+        sock_in.bind(('localhost', s_in))
+        sock_out.bind(('localhost', s_out))
+        sock_out.connect(('localhost', c_s_in))
+        sender_function(file_in, sock_in, sock_out)
