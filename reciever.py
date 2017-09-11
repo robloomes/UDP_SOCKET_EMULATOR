@@ -9,7 +9,7 @@ from contextlib import closing
 import socket
 import sys
 import pickle
-from packet import create_packet
+from packet import *
 
 MAGIC_NO = 0x497E
 MIN_PORT_NUM = 1024
@@ -25,7 +25,7 @@ def initialise_receiver(receiver_in_port, receiver_out_port, chan_receive_in_por
         where it will wait for incoming packets for writing.
     """    
     try:
-        file = open(file_name, 'xb') 
+        file = open(file_name, 'wb') 
     except:
         print ("File name already exists.")
         return
@@ -47,20 +47,24 @@ def receiver_helper(receiver_in, receiver_out, file):
     
     while True:
         packet_pickled = receiver_in.recv(MAX_PORT_NUM)
+        
         try:
-            packet = pickle.load(packet_pickled)
+            packet = pickle.loads(packet_pickled)
         except ValueError:
             continue
-        if packet.packet_type != TYPE.DATA:
+        if packet.packet_type != TYPE_DATA:
             continue
         if packet.seqno != expected:
-            ack_pkt = create_packet(TYPE_DATA, packet.seqno, b'')
+            ack_pkt = create_packet(TYPE_ACK, packet.seqno, 0, None)
             receiver_out.send(pickle.dumps(ack_pkt))
         else:
-            ack_pkt = Packet(TYPE_DATA, packet.seqno, b'')
+            
+            ack_pkt = Packet(TYPE_ACK, packet.seqno, 0, None)
             receiver_out.send(pickle.dumps(ack_pkt))
             expected = 1 - expected
-            if packet.data == True:
+            
+            if packet.data:
+                print(type(packet.data))
                 file.write(packet.data)
             else:
                 break
