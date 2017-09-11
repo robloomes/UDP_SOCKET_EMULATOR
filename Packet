@@ -1,54 +1,54 @@
  """
      COSC 264 Sockets assignment (2017)
- -   Student Name: Robert Loomes
- -   Usercode: rwl29
- +   Packet
- +   Student Name: Robert Loomes, Jake Simpson
- +   Usercode: rwl29, jsi76
+    Student Name: Robert Loomes
+    Usercode: rwl29
+    Packet
+    Student Name: Robert Loomes, Jake Simpson
+    Usercode: rwl29, jsi76
   """
- -
- +#TODO data variable###########################
+ 
+ #TODO data variable###########################
   class Packet:
       """Creates the packet to be sent via the 
       Sender/Channel/Reciever connections"""
       
- -    def __init__(self, packetType, seqno, dataLen, data):
- +    def __init__(self, packet_type, seqno, data_len, data):
+     def __init__(self, packetType, seqno, dataLen, data):
+     def __init__(self, packet_type, seqno, data_len, data):
           
- -        self.magicNo = 0x497E
- -        self.packetType = packet_type #two available types dataPacket OR acknowledgementPacket
- -        self.seqno = seqno #need to restrict this value to 0 or 1
- -        self.dataLen =  dataLen
- +        self.magic_no = 0x497E
- +        self.packet_type = packet_type 
- +        self.seqno = seqno 
- +        self.data_len = data_len
-          self.data =  data
+         self.magicNo = 0x497E
+         self.packetType = packet_type #two available types dataPacket OR acknowledgementPacket
+         self.seqno = seqno #need to restrict this value to 0 or 1
+         self.dataLen =  dataLen
+         self.magic_no = 0x497E
+         self.packet_type = packet_type 
+         self.seqno = seqno 
+         self.data_len = data_len
+         self.data =  data
           
- +        #def packet_type_check(self):
- +            #if packet_type !=  dataPacket or packet_type != acknowledgementPacket:
- +                #raise TypeError('Packet type not compatiable')
- +            
- +    def seqno_check(self):
- +        if (self.seqno !=  0) and (self.seqno != 1):
- +            raise ValueError('Seqence number must be restricted to values 0 or 1')
- +            
- +    def data_len_check(self):
- +        if self.data_len < 0 or self.data_len > 512:
- +            raise ValueError('Data length exeeds 512 bytes (maximum data value)')
- +            
- +    def print_packet(self):
- +        print('Packet seqno: {}'.format(self.seqno))
- +            
- +def create_packet(packet_type, seqno, data_len, data):
- +    """Creates Packet class and calls it's helper functions
- +    to creck parameter validity"""
- +    
- +    packet = Packet(packet_type, seqno, data_len, data)
- +    packet.seqno_check()
- +    packet.data_len_check()
- +    packet.print_packet()
- +    
- +    print(packet)
- +    
- +create_packet('dataPacket', 0, 109, 0) 
+         #def packet_type_check(self):
+             #if packet_type !=  dataPacket or packet_type != acknowledgementPacket:
+                 #raise TypeError('Packet type not compatiable')
+             
+     def seqno_check(self):
+         if (self.seqno !=  0) and (self.seqno != 1):
+             raise ValueError('Seqence number must be restricted to values 0 or 1')
+             
+     def data_len_check(self):
+         if self.data_len < 0 or self.data_len > 512:
+             raise ValueError('Data length exeeds 512 bytes (maximum data value)')
+             
+     def print_packet(self):
+         print('Packet seqno: {}'.format(self.seqno))
+             
+ def create_packet(packet_type, seqno, data_len, data):
+     """Creates Packet class and calls it's helper functions
+     to creck parameter validity"""
+     
+     packet = Packet(packet_type, seqno, data_len, data)
+     packet.seqno_check()
+     packet.data_len_check()
+     packet.print_packet()
+     
+     print(packet)
+    
+ create_packet('dataPacket', 0, 109, 0) 
