@@ -1,7 +1,7 @@
 """
    COSC 264 Sockets assignment (2017)
-   Student Names: Robert Loomes, Jake Simpson
-   Usercodes: rwl29, jsi76
+   Student Name: Robert Loomes
+   Usercode: rwl29
 """
 import os
 import select
@@ -15,32 +15,35 @@ from contextlib import closing
 1 port number Cs,in
 file name
 """
+
 BLOCK_SIZE = int(os.environ.get('SENDER_BLOCK_SIZE', '512'))
 TIMEOUT = float(os.environ.get('SENDER_TIMEOUT', '1'))
 
 def loop(file_in, sock_in, sock_out):
     v_next = 0
     exit_flag = False
+    packet_count = 0
     
     while not exit_flag:
         data = file_in.read(BLOCK_SIZE)
         dataLen = len(data)
         
         if dataLen > 0:
-            packetBuffer = Packet(PacketType.data, v_next, data_len, data)
+            packetBuffer = Packet(dataPacket, v_next, data_len, data)
         else:
             if dataLen == 0:
-                packetBuffer = Packet(PacketType.data, v_next, data)
+                packetBuffer = Packet(dataPacket, v_next, dataLen)
                 exitFlag = True
         
-        exit_flag = not data
         processing = True
         while processing:
             try:
-                sock_out.send(packetBuffer.to_bytes())
+                sock_out.send(packetBuffer)
+                packet_count += 1
             except ConnectionRefusedError:
                 print('Connection lost with sender')
                 return
+            
             ready, _, _ = select.select([sock_in], [], [], TIMEOUT)
             
             if not ready:
@@ -49,21 +52,27 @@ def loop(file_in, sock_in, sock_out):
             rcvd = sock_in.recv(2**16) #may change due to different number needed
             
             try:
-                exploded = Packet.from_bytes(rcvd)
+                trial = Packet(rcvd)
 
             except ValueError:
                 continue
-            if exploded.maginco != 0x497E:
+            if trial.magic_no != 0x497E:
                 continue
-            if exploded.type_ != PacketType.ack:
+            if trial.packet_type != acknowledgementPacket:
                 continue
-            if exploded.dataLen != 0:
+            if trial.dataLen != 0:
                 continue
-            if exploded.seqno != v_next:
+            if trial.seqno != v_next:
                 continue
                 
             v_next = 1 - v_next
             processing = False
+    
+        if exit_flag != True:
+            continue
+        else:
+            print("Number of packets sent in total {}".format(packet_count))
+            exit(0)
                                         
                         
                         
