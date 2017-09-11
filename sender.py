@@ -1,7 +1,7 @@
 """
    COSC 264 Sockets assignment (2017)
-   Student Name: Robert Loomes
-   Usercode: rwl29
+   Student Name: Robert Loomes, Jake Simpson
+   Usercode: rwl29, jsi76
 """
 import os
 import select
@@ -35,10 +35,10 @@ def sender_function(file_in, sock_in, sock_out):
         data_len = len(data)
         
         if data_len > 0:
-            packetBuffer = create_packet(dataPacket, v_next, data_len, data)
+            packetBuffer = create_packet(TYPE_DATA, v_next, data_len, data)
         else:
             if data_len == 0:
-                packetBuffer = create_packet(dataPacket, v_next, data_len)
+                packetBuffer = create_packet(TYPE_DATA, v_next, data_len)
                 exitFlag = True
         
         processing = True
@@ -66,7 +66,7 @@ def sender_function(file_in, sock_in, sock_out):
                 continue
             if trial.magic_no != 0x497E:
                 continue
-            if trial.packet_type != acknowledgementPacket:
+            if trial.packet_type != TYPE_ACK:
                 continue
             if trial.dataLen != 0:
                 continue
@@ -96,7 +96,7 @@ def main(argv):
     port_list = [receiver_in, receiver_out, chan_receive_in]
     for port in port_list:
         if port < 1024 or port > 64000:
-            raise ValueError('Port numbers must be in the range between 1,024 and 64,000.')
+            print('Port numbers must be in the range between 1,024 and 64,000.')
         return    
     with open(file_name, 'rb') as file_in, \
             closing(socket.socket(type=socket.SOCK_DGRAM)) as sock_in, \
