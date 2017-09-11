@@ -41,7 +41,6 @@ def create_packet(packet_type, seqno, data_len, data):
     packet = Packet(packet_type, seqno, data_len, data)
     packet.seqno_check()
     packet.data_len_check()
-    packet.print_packet()
     
     return packet
     
