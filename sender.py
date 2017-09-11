@@ -1,7 +1,7 @@
 """
    COSC 264 Sockets assignment (2017)
-   Student Name: Robert Loomes
-   Usercode: rwl29
+   Student Names: Robert Loomes, Jake Simpson
+   Usercodes: rwl29, jsi76
 """
 import os
 import select
