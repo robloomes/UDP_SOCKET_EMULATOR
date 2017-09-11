@@ -97,7 +97,7 @@ def main(argv):
     for port in port_list:
         if port < 1024 or port > 64000:
             print('Port numbers must be in the range between 1,024 and 64,000.')
-        return    
+            return    
     with open(file_name, 'rb') as file_in, \
             closing(socket.socket(type=socket.SOCK_DGRAM)) as sock_in, \
             closing(socket.socket(type=socket.SOCK_DGRAM)) as sock_out:
