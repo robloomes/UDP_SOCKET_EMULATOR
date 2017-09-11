@@ -10,7 +10,7 @@ import sys
 import pickle
 from contextlib import closing
 
-from packet import create_packet
+from packet import *
 
 
 """
@@ -26,6 +26,7 @@ def sender_function(file_in, sock_in, sock_out):
     """function that has an outer and inner loop. Outer loop prepares a packet
     for packetBuffer. Inner loop sends out the packet buffer then waits and 
     checks the response packet"""
+
     v_next = 0 
     exit_flag = False
     packet_count = 0
@@ -33,22 +34,31 @@ def sender_function(file_in, sock_in, sock_out):
     while not exit_flag:
         data = file_in.read(BLOCK_SIZE)
         data_len = len(data)
+ 
         
         if data_len > 0:
             packetBuffer = create_packet(TYPE_DATA, v_next, data_len, data)
+            
+            
         else:
             if data_len == 0:
-                packetBuffer = create_packet(TYPE_DATA, v_next, data_len)
-                exitFlag = True
+                packetBuffer = create_packet(TYPE_DATA, v_next, data_len, None)
+                exit_flag = True
         
         processing = True
+
+        
         while processing:
             try:
+                
+                print(v_next)
                 pickled = pickle.dumps(packetBuffer)
                 sock_out.send(pickled)
                 packet_count += 1
+                
             except ConnectionRefusedError:
                 print('Connection lost with sender')
+                
                 return
             
             ready, _, _ = select.select([sock_in], [], [], TIMEOUT)
@@ -59,8 +69,9 @@ def sender_function(file_in, sock_in, sock_out):
             rcvd = sock_in.recv(2**16) #may change due to different number needed
             
             try:
-                rcvd_pickle = pickle.load(rcvd)
-                trial = create_packet(rcvd)
+                rcvd_pickle = pickle.loads(rcvd)
+                trial = rcvd_pickle
+                #print(trial.seqno)
 
             except ValueError:
                 continue
@@ -68,7 +79,7 @@ def sender_function(file_in, sock_in, sock_out):
                 continue
             if trial.packet_type != TYPE_ACK:
                 continue
-            if trial.dataLen != 0:
+            if trial.data_len != 0:
                 continue
             if trial.seqno != v_next:
                 continue
@@ -80,20 +91,25 @@ def sender_function(file_in, sock_in, sock_out):
             continue
         else:
             print("Number of packets sent in total = {}".format(packet_count))
-            exit(0)
+        break
+    
+    file_in.close()
+    sock_in.close()
+    sock_out.close()
+    exit(0)
                                         
                         
                         
 def main(argv):
     """main function for sender program that opens ports for sending"""
     try:
-        s_in = int(argv[1])
-        s_out = int(argv[2])
-        c_s_in = int(argv[3])
+        sender_in = int(argv[1])
+        sender_out = int(argv[2])
+        chan_send_in = int(argv[3])
         file_name = argv[4]
     except (IndexError, ValueError):
         return 'Usage: {} S_IN S_OUT C_S_IN FILE_NAME'.format(sys.argv[0])
-    port_list = [receiver_in, receiver_out, chan_receive_in]
+    port_list = [sender_in, sender_out, chan_send_in]
     for port in port_list:
         if port < 1024 or port > 64000:
             print('Port numbers must be in the range between 1,024 and 64,000.')
@@ -101,7 +117,11 @@ def main(argv):
     with open(file_name, 'rb') as file_in, \
             closing(socket.socket(type=socket.SOCK_DGRAM)) as sock_in, \
             closing(socket.socket(type=socket.SOCK_DGRAM)) as sock_out:
-        sock_in.bind(('localhost', s_in))
-        sock_out.bind(('localhost', s_out))
-        sock_out.connect(('localhost', c_s_in))
+        sock_in.bind(('localhost', sender_in))
+        sock_out.bind(('localhost', sender_out))
+        sock_out.connect(('localhost', chan_send_in))
         sender_function(file_in, sock_in, sock_out)
+        
+if __name__ == '__main__':
+    #sys.exit(main(sys.argv))
+    main(sys.argv)
