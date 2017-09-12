@@ -2,6 +2,7 @@
    COSC 264 Sockets assignment (2017)
    Student Name: Robert Loomes, Jake Simpson
    Usercode: rwl29, jsi76
+   September 2017
 """
 import os
 import select
@@ -9,83 +10,64 @@ import socket
 import sys
 import pickle
 from contextlib import closing
-
 from packet import *
 
-
-"""
-2 port numbers for Sin and Sout
-1 port number Cs,in
-file name
-"""
-
+BUFF_SIZE = 2**16
 BLOCK_SIZE = int(os.environ.get('SENDER_BLOCK_SIZE', '512'))
 TIMEOUT = float(os.environ.get('SENDER_TIMEOUT', '1'))
 
-def sender_function(file_in, sock_in, sock_out):
-    """function that has an outer and inner loop. Outer loop prepares a packet
+def sender_function(file_in, sender_in, sender_out):
+    """Function that has an outer and inner loop. Outer loop prepares a packet
     for packetBuffer. Inner loop sends out the packet buffer then waits and 
-    checks the response packet"""
+    checks the response packet."""
 
-    v_next = 0 
+    var_next = 0 
     exit_flag = False
     packet_count = 0
     
     while not exit_flag:
-        data = file_in.read(BLOCK_SIZE)
+        data = file_in.read(BLOCK_SIZE) #reads data from file up to the block size
         data_len = len(data)
- 
-        
         if data_len > 0:
-            packetBuffer = create_packet(TYPE_DATA, v_next, data_len, data)
-            
-            
+            packetBuffer = create_packet(TYPE_DATA, var_next, data_len, data)
         else:
             if data_len == 0:
-                packetBuffer = create_packet(TYPE_DATA, v_next, data_len, None)
+                packetBuffer = create_packet(TYPE_DATA, var_next, data_len, None)
                 exit_flag = True
-        
-        processing = True
-
-        
-        while processing:
+        #a data packet is created and ready for sending
+        packet_processing = True
+        while packet_processing:
             try:
-                
-                print(v_next)
-                pickled = pickle.dumps(packetBuffer)
-                sock_out.send(pickled)
+                pickled = pickle.dumps(packetBuffer) #converts data to a bytes object
+                sender_out.send(pickled) #packet is sent
                 packet_count += 1
-                
             except ConnectionRefusedError:
-                print('Connection lost with sender')
-                
+                print('Connection lost with sender.')
                 return
             
-            ready, _, _ = select.select([sock_in], [], [], TIMEOUT)
-            
+            ready, _, _ = select.select([sender_in], [], [], TIMEOUT)
             if not ready:
                 continue
             
-            rcvd = sock_in.recv(2**16) #may change due to different number needed
-            
+            rcvd = sender_in.recv(BUFF_SIZE) #may change due to different number needed
+            #port is ready to receive any aknowledment packets that may arrive
             try:
-                rcvd_pickle = pickle.loads(rcvd)
+                rcvd_pickle = pickle.loads(rcvd) #assumes that any received packets would be in byte format
                 trial = rcvd_pickle
-                #print(trial.seqno)
-
             except ValueError:
                 continue
+                  
             if trial.magic_no != 0x497E:
                 continue
             if trial.packet_type != TYPE_ACK:
                 continue
             if trial.data_len != 0:
                 continue
-            if trial.seqno != v_next:
+            if trial.seqno != var_next:
                 continue
                 
-            v_next = 1 - v_next
-            processing = False
+            var_next = 1 - var_next
+            packet_processing = False
     
         if exit_flag != True:
             continue
@@ -93,15 +75,17 @@ def sender_function(file_in, sock_in, sock_out):
             print("Number of packets sent in total = {}".format(packet_count))
         break
     
+    #break down the program
     file_in.close()
-    sock_in.close()
-    sock_out.close()
+    sender_in.close()
+    sender_out.close()
     exit(0)
                                         
                         
                         
 def main(argv):
-    """main function for sender program that opens ports for sending"""
+    """Main function for sender program that creates/binds ports for sending.
+    Error checks parameters and port numbers."""
     try:
         sender_in = int(argv[1])
         sender_out = int(argv[2])
