@@ -15,6 +15,7 @@ MAGIC_NO = 0x497E
 MIN_PORT_NUM = 1024
 MAX_PORT_NUM = 64000 
  
+   
 def initialise_receiver(receiver_in_port, receiver_out_port, chan_receive_in_port
                        , file_name):
     """ Takes parameters: two port numbers for the receiver sockets,
@@ -37,7 +38,8 @@ def initialise_receiver(receiver_in_port, receiver_out_port, chan_receive_in_por
         receiver_out.connect(('localhost', chan_receive_in_port))   
         
         receiver_helper(receiver_in, receiver_out, file)    
-     
+
+      
 def receiver_helper(receiver_in, receiver_out, file):
     """
     Enters the loop where it waits for an incoming packet. If error checks on 
@@ -47,7 +49,6 @@ def receiver_helper(receiver_in, receiver_out, file):
     
     while True:
         packet_pickled = receiver_in.recv(MAX_PORT_NUM)
-        
         try:
             packet = pickle.loads(packet_pickled)
         except ValueError:
@@ -58,23 +59,20 @@ def receiver_helper(receiver_in, receiver_out, file):
             ack_pkt = create_packet(TYPE_ACK, packet.seqno, 0, None)
             receiver_out.send(pickle.dumps(ack_pkt))
         else:
-            
             ack_pkt = Packet(TYPE_ACK, packet.seqno, 0, None)
             receiver_out.send(pickle.dumps(ack_pkt))
             expected = 1 - expected
-            
             if packet.data:
                 print(type(packet.data))
                 file.write(packet.data)
             else:
                 break
- 
- 
+
+                  
 def main(argv):
     """ Reads parameters from command line for use in other functions. 
     Checks parameters for errors and validity.
     """
-    
     try:
         receiver_in = int(argv[1])
         receiver_out = int(argv[2])
@@ -85,18 +83,13 @@ def main(argv):
         return
     
     port_list = [receiver_in, receiver_out, chan_receive_in]
-    
     for port in port_list:
-        if port < 1024 or port > 64000:
+        if port < MIN_PORT_NUMBER or port > MAX_PORT_NUMBER:
             print('Port numbers must be in the range between 1,024 and 64,000.')
             return
        
     #Parameters validated, ready to engage sockets.    
     initialise_receiver(receiver_in, receiver_out, chan_receive_in, file_name)
 
-    
- 
- 
 if __name__ == '__main__':
-    #sys.exit(main(sys.argv))
     main(sys.argv)
