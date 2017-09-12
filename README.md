@@ -1,2 +1,1 @@
-# sockets_assignment
-COSC264 socket assignment
+check if change BUFF_SIZE to 4096 still alows the program to work
