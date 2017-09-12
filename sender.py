@@ -94,8 +94,9 @@ def main(argv):
         sender_out = int(argv[2])
         chan_send_in = int(argv[3])
         file_name = argv[4]
-    except (IndexError, ValueError):
-        return 'Usage: {} S_IN S_OUT C_S_IN FILE_NAME'.format(sys.argv[0])
+    except (IndexError):
+        print('Invalid parameters, please provide 4 arguments for processing.')
+        return
     port_list = [sender_in, sender_out, chan_send_in]
     for port in port_list:
         if port < MIN_PORT_NUMBER or port > MAX_PORT_NUMBER:
