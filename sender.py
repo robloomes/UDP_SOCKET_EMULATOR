@@ -15,6 +15,9 @@ from packet import *
 BUFF_SIZE = 2**16
 BLOCK_SIZE = int(os.environ.get('SENDER_BLOCK_SIZE', '512'))
 TIMEOUT = float(os.environ.get('SENDER_TIMEOUT', '1'))
+MAGIC_NO = 0x497E
+MIN_PORT_NUM = 1024
+MAX_PORT_NUM = 64000 
 
 def sender_function(file_in, sender_in, sender_out):
     """Function that has an outer and inner loop. Outer loop prepares a packet
@@ -57,7 +60,7 @@ def sender_function(file_in, sender_in, sender_out):
             except ValueError:
                 continue
                   
-            if trial.magic_no != 0x497E:
+            if trial.magic_no != MAGIC_NO:
                 continue
             if trial.packet_type != TYPE_ACK:
                 continue
@@ -82,10 +85,10 @@ def sender_function(file_in, sender_in, sender_out):
     exit(0)
                                         
                         
-                        
 def main(argv):
     """Main function for sender program that creates/binds ports for sending.
     Error checks parameters and port numbers."""
+      
     try:
         sender_in = int(argv[1])
         sender_out = int(argv[2])
@@ -95,7 +98,7 @@ def main(argv):
         return 'Usage: {} S_IN S_OUT C_S_IN FILE_NAME'.format(sys.argv[0])
     port_list = [sender_in, sender_out, chan_send_in]
     for port in port_list:
-        if port < 1024 or port > 64000:
+        if port < MIN_PORT_NUMBER or port > MAX_PORT_NUMBER:
             print('Port numbers must be in the range between 1,024 and 64,000.')
             return    
     with open(file_name, 'rb') as file_in, \
@@ -107,5 +110,4 @@ def main(argv):
         sender_function(file_in, sock_in, sock_out)
         
 if __name__ == '__main__':
-    #sys.exit(main(sys.argv))
     main(sys.argv)
