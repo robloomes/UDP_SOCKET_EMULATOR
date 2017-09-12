@@ -81,7 +81,6 @@ def main(argv):
     except (IndexError):
         print('Invalid parameters, please provide 4 arguments for processing.')
         return
-    
     port_list = [receiver_in, receiver_out, chan_receive_in]
     for port in port_list:
         if port < MIN_PORT_NUMBER or port > MAX_PORT_NUMBER:
