@@ -26,16 +26,17 @@ def sender_function(file_in, sender_in, sender_out):
 
     var_next = 0 
     exit_flag = False
+    dropped_count = 0
     packet_count = 0
     
     while not exit_flag:
         data = file_in.read(BLOCK_SIZE) #reads data from file up to the block size
         data_len = len(data)
         if data_len > 0:
-            packetBuffer = create_packet(TYPE_DATA, var_next, data_len, data)
+            packetBuffer = create_packet(TYPE_DATA, var_next, data_len, data_len, data)
         else:
             if data_len == 0:
-                packetBuffer = create_packet(TYPE_DATA, var_next, data_len, None)
+                packetBuffer = create_packet(TYPE_DATA, var_next, data_len, data_len, None)
                 exit_flag = True
         #a data packet is created and ready for sending
         packet_processing = True
@@ -44,14 +45,18 @@ def sender_function(file_in, sender_in, sender_out):
                 pickled = pickle.dumps(packetBuffer) #converts data to a bytes object
                 sender_out.send(pickled) #packet is sent
                 packet_count += 1
+                print('Sender --> Channel packet no.{} sent.'.format(packet_count))
             except ConnectionRefusedError:
-                print('Connection lost with sender.')
+                print('Connection terminated with sender.')
+                print("Number of packets sent in total = {}".format(packet_count))
+                print("Number of packets dropped = {}".format(dropped_count))                
                 return
             
             ready, _, _ = select.select([sender_in], [], [], TIMEOUT)
             if not ready:
+                dropped_count += 1
                 continue
-            
+        
             rcvd = sender_in.recv(BUFF_SIZE) #may change due to different number needed
             #port is ready to receive any aknowledment packets that may arrive
             try:
@@ -60,12 +65,12 @@ def sender_function(file_in, sender_in, sender_out):
             except ValueError:
                 continue
                   
-            if trial.magic_no != MAGIC_NO:
+            if trial.magic_no != MAGIC_NO:               
                 continue
             if trial.packet_type != TYPE_ACK:
                 continue
             if trial.data_len != 0:
-                continue
+                continue    
             if trial.seqno != var_next:
                 continue
                 
@@ -76,6 +81,7 @@ def sender_function(file_in, sender_in, sender_out):
             continue
         else:
             print("Number of packets sent in total = {}".format(packet_count))
+            print("Number of packets dropped = {}".format(dropped_count))
         break
     
     #break down the program
@@ -99,7 +105,7 @@ def main(argv):
         return
     port_list = [sender_in, sender_out, chan_send_in]
     for port in port_list:
-        if port < MIN_PORT_NUMBER or port > MAX_PORT_NUMBER:
+        if port < MIN_PORT_NUM or port > MAX_PORT_NUM:
             print('Port numbers must be in the range between 1,024 and 64,000.')
             return    
     with open(file_name, 'rb') as file_in, \
@@ -112,3 +118,5 @@ def main(argv):
         
 if __name__ == '__main__':
     main(sys.argv)
+
+
